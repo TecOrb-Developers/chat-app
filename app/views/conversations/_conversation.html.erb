@@ -1,53 +1,80 @@
-<%
-  # Get user from locals or try current_user as fallback
-  display_user = local_assigns[:user]
-  display_user ||= current_user if defined?(current_user) && respond_to?(:current_user)
-%>
-<%= link_to conversation_path(conversation), 
-    class: "list-group-item list-group-item-action d-flex justify-content-between align-items-center" do %>
-  <div class="d-flex align-items-center">
-    <div class="me-3">
-      <% if conversation.direct_message? && defined?(current_user) && current_user.present? %>
-        <% other_user = conversation.other_participant(current_user) rescue nil %>
-        <% if other_user.present? %>
-          <div class="position-relative">
-            <%= image_tag other_user.avatar_url || "default-avatar.png", 
-                  class: "rounded-circle", 
-                  style: "width: 40px; height: 40px; object-fit: cover;" %>
-            <span class="position-absolute bottom-0 end-0 p-1 bg-<%= other_user.online? ? 'success' : 'secondary' %> border border-light rounded-circle">
-              <span class="visually-hidden"><%= other_user.online? ? 'Online' : 'Offline' %></span>
-            </span>
-          </div>
-        <% end %>
-      <% else %>
-        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" 
-             style="width: 40px; height: 40px;">
-          <i class="bi bi-people-fill"></i>
-        </div>
+<!-- app/views/conversations/_conversation.html.erb -->
+<div class="h-[calc(100vh-56px)] max-h-[calc(100vh-56px)] grid grid-cols-1 md:grid-cols-3">
+  <!-- Sidebar (list of conversations) -->
+  <aside class="hidden md:flex flex-col border-r border-gray-200 bg-white">
+    <div class="p-4 border-b">
+      <h2 class="text-lg font-semibold">Messages</h2>
+    </div>
+    <div class="p-3 border-b">
+      <div class="relative">
+        <input class="w-full py-2 pl-10 pr-3 text-sm bg-gray-100 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search">
+        <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      </div>
+    </div>
+    <div class="flex-1 overflow-y-auto">
+      <% @conversations.each do |conversation| %>
+        <%= render "conversations/conversation_item", conversation: conversation, user: current_user %>
       <% end %>
     </div>
-    
-    <div>
-      <h6 class="mb-0">
-        <% if display_user.present? %>
-          <%= conversation.name(display_user) rescue conversation.title %>
-        <% else %>
-          <%= conversation.title %>
-        <% end %>
-      </h6>
-      <small class="text-muted">
-        <% if conversation.last_message.present? %>
-          <% if defined?(current_user) && current_user.present? && conversation.last_message.user == current_user %>
-            You: 
-          <% elsif !conversation.direct_message? && conversation.last_message.user.present? %>
-            <%= conversation.last_message.user.username %>: 
-          <% end %>
-          <%= truncate(conversation.last_message.content, length: 25) if conversation.last_message.content.present? %>
-          <% if conversation.last_message.created_at.present? %>
-            <span class="text-muted">· <%= time_ago_in_words(conversation.last_message.created_at) %> ago</span>
-          <% end %>
-        <% end %>
-      </small>
+  </aside>
+
+  <!-- Chat area -->
+  <section class="md:col-span-2 flex flex-col">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-4 py-3 border-b bg-white">
+			<div class="min-w-0">
+				<h3 class="text-lg font-semibold text-gray-900 truncate">
+					<%= @conversation.display_name(for_user: current_user) %>
+				</h3>
+				<p class="text-xs text-gray-500 mt-0.5">
+					<% if @conversation.direct_message? %>
+						Direct message
+					<% else %>
+						<%= pluralize(@conversation.users.count, "member") %>
+					<% end %>
+				</p>
+			</div>
+
+			<div class="flex items-center gap-2">
+				<%= link_to leave_conversation_path(@conversation),
+						data: { turbo_method: :post, turbo_confirm: "Leave this conversation?" },
+						class: "inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 hover:border-red-300 transition-colors" do %>
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+									d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h4a2 2 0 012 2v1" />
+					</svg>
+					Leave
+				<% end %>
+			</div>
+		</div>
+
+    <!-- Messages -->
+    <div id="messages" class="flex-1 overflow-y-auto px-4 py-4 bg-gray-50" data-controller="scroll-to-bottom">
+        <div class="mx-auto w-full max-w-3xl space-y-3">
+            <%= turbo_frame_tag "messages" do %>
+            <% @messages.each do |message| %>
+                <%= render "messages/message", message: message, current_user: current_user %>
+            <% end %>
+            <% end %>
+        </div>
     </div>
-  </div>
-<% end %>
+
+    <!-- Composer -->
+    <div class="border-t bg-white">
+			<div class="mx-auto max-w-3xl px-4">
+					<%= form_with model: [@conversation, Message.new], data: { controller: "message-form", action: "keydown.enter->message-form#handleSubmit turbo:submit-end->message-form#resetForm" }, class: "py-3" do |f| %>
+					<div class="flex items-end gap-2">
+						<label class="inline-flex items-center justify-center w-10 h-10 rounded-md bg-gray-100 hover:bg-gray-200 cursor-pointer">
+						<%= f.file_field :attachments, multiple: true, class: "hidden" %>
+						<svg class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828M16 5l3 3"/></svg>
+						</label>
+						<div class="flex-1">
+						<%= f.text_area :content, rows: 1, placeholder: "Type a message…", class: "w-full resize-none rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" %>
+						</div>
+						<%= f.submit "Send", class: "px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700" %>
+					</div>
+					<% end %>
+			</div>
+    </div>
+  </section>
+</div>

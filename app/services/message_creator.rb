@@ -14,9 +14,9 @@ class MessageCreator
       notify_users(message)
       message
     end
-  # rescue StandardError => e
-  #   Rails.logger.error "Failed to create message: #{e.message}"
-  #   nil
+  rescue StandardError => e
+    Rails.logger.error "Failed to create message: #{e.message}"
+    nil
   end
 
   private

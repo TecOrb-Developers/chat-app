@@ -70,21 +70,24 @@ class Message < ApplicationRecord
   end
 
   def broadcast_message
-    broadcast_append_to(
-      conversation,
-      target: "messages",
-      partial: "messages/message",
-      locals: { message: self, current_user: user }
-    )
+    conversation.users.find_each do |recipient|
+      broadcast_append_to(
+        [recipient, conversation],
+        target: "messages",
+        partial: "messages/message",
+        locals: { message: self, current_user: recipient }
+      )
+    end
 
-
-    # Also broadcast to conversation list to update preview
-    conversation.broadcast_replace_to(
-      "conversations",
-      target: "conversation_#{conversation.id}",
-      partial: "conversations/conversation_item",
-      locals: { conversation: conversation }
-    )
+    # Update each user’s conversation list row
+    conversation.users.find_each do |recipient|
+      broadcast_replace_to(
+        [recipient, "conversations"],
+        target: "conversation_#{conversation.id}",
+        partial: "conversations/conversation_item",
+        locals: { conversation: conversation, user: recipient }
+      )
+    end
   end
 
   def broadcast_message_update
@@ -127,5 +130,9 @@ class Message < ApplicationRecord
 
   def increment_unread_counts
     conversation.increment_unread_for_all_except(user)
+  end
+
+  def clear_typing_indicator
+    conversation.remove_typing_user(user) if conversation.respond_to?(:remove_typing_user)
   end
 end

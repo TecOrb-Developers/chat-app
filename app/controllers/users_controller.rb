@@ -6,7 +6,7 @@ class UsersController < ApplicationController
       .page(params[:page])
       .per(20)
 
-    @users = @users.where('username ILIKE ?', "%#{params[:q]}%") if params[:q].present?
+    @users = @users.where('username LIKE ?', "%#{params[:q]}%") if params[:q].present?
   end
 
   def show

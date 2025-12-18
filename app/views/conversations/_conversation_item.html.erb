@@ -1,0 +1,73 @@
+<% active = defined?(@conversation) && @conversation.id == conversation.id %>
+
+<%= link_to conversation_path(conversation), 
+    class: "block transition-colors #{active ? 'bg-blue-50 border-r-2 border-blue-500' : 'bg-white hover:bg-gray-50'} px-4 py-3 border-b border-gray-100" do %>
+  <div class="flex items-center space-x-3">
+    <!-- Avatar -->
+    <div class="relative flex-shrink-0">
+      <% if conversation.conversation_type == 'group_chat' %>
+        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+          <span class="text-white font-semibold text-sm"><%= conversation.title[0..1].upcase %></span>
+        </div>
+      <% else %>
+        <% other_user = conversation.other_user(current_user) %>
+        <% avatar = other_user.avatar.attached? ? url_for(other_user.avatar) : "https://ui-avatars.com/api/?name=#{other_user.username}&background=random" %>
+        <img src="<%= avatar %>" alt="<%= other_user.username %>" class="w-12 h-12 rounded-full object-cover">
+        <% if other_user.online? %>
+          <span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></span>
+        <% end %>
+      <% end %>
+    </div>
+
+    <!-- Content -->
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center justify-between mb-1">
+        <h3 class="text-sm font-semibold text-gray-900 truncate">
+          <%= conversation.conversation_type == 'group_chat' ? conversation.title : conversation.other_user(current_user).username %>
+        </h3>
+        <span class="text-xs text-gray-500 flex-shrink-0">
+          <%= time_ago_in_words(conversation.updated_at) %>
+        </span>
+      </div>
+      
+      <div class="flex items-center justify-between">
+        <p class="text-sm text-gray-600 truncate pr-2">
+          <% if conversation.messages.any? %>
+            <% last_message = conversation.messages.last %>
+            <% if last_message.user_id == current_user.id %>
+              <span class="text-gray-500">You:</span> 
+            <% end %>
+            <%= last_message.content.truncate(35) %>
+          <% else %>
+            <span class="text-gray-400 italic">No messages yet</span>
+          <% end %>
+        </p>
+        
+        <!-- Unread count or status indicators -->
+        <div class="flex items-center space-x-1 flex-shrink-0">
+          <% if conversation.conversation_type == 'group_chat' %>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+              <%= pluralize(conversation.users.count, 'member') %>
+            </span>
+          <% end %>
+          
+          <!-- Unread indicator (you can implement this based on your unread logic) -->
+          <% unread_count = 0 %> <!-- Replace with actual unread count logic -->
+          <% if unread_count > 0 %>
+            <span class="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-500 rounded-full">
+              <%= unread_count > 9 ? '9+' : unread_count %>
+            </span>
+          <% end %>
+          
+          <!-- Read status indicators -->
+          <% if conversation.messages.any? && conversation.messages.last.user_id == current_user.id %>
+            <div class="flex space-x-0.5">
+              <div class="w-1 h-1 bg-blue-500 rounded-full"></div>
+              <div class="w-1 h-1 bg-blue-500 rounded-full"></div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

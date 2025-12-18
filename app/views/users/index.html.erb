@@ -1,33 +1,57 @@
-<!-- app/views/users/index.html.erb -->
-<div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h2 class="mb-0">Users</h2>
-    <%= form_with url: users_path, method: :get, class: "d-flex" do |f| %>
-      <%= f.text_field :q, 
-            value: params[:q], 
-            placeholder: "Search users...",
-            class: "form-control me-2" %>
-      <%= f.submit "Search", class: "btn btn-outline-primary" %>
+<div class="max-w-5xl mx-auto p-6">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+    <h1 class="text-2xl font-semibold text-gray-900">Users</h1>
+
+    <%= form_with url: users_path, method: :get, class: "flex items-center gap-2" do |f| %>
+      <%= f.text_field :q,
+        value: params[:q],
+        placeholder: "Search users...",
+        class: "w-64 rounded-full border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" %>
+      <%= f.submit "Search", class: "px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700" %>
     <% end %>
   </div>
-  
-  <div class="list-group list-group-flush">
-    <% @users.each do |user| %>
-      <%= link_to user_path(user), class: "list-group-item list-group-item-action d-flex justify-content-between align-items-center" do %>
-        <div>
-          <h5 class="mb-1"><%= user.username %></h5>
-          <small class="text-muted">
-            <%= user.online? ? "Online" : "Last seen #{time_ago_in_words(user.last_seen_at)} ago" %>
-          </small>
-        </div>
-        <span class="badge bg-primary rounded-pill">
-          <i class="bi bi-chat"></i> Message
-        </span>
+
+  <div class="bg-white rounded-lg shadow divide-y divide-gray-100">
+    <% if @users.any? %>
+      <% @users.each do |user| %>
+        <%= link_to user_path(user), class: "flex items-center justify-between p-4 hover:bg-gray-50 transition-colors" do %>
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="relative">
+              <% avatar = user.try(:avatar_url).presence || "https://ui-avatars.com/api/?name=#{ERB::Util.url_encode(user.username.to_s)}&background=random&bold=true" %>
+              <img src="<%= avatar %>" alt="<%= user.username %>" class="w-10 h-10 rounded-full object-cover">
+              <% if user.online? %>
+                <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full ring-2 ring-white"></span>
+              <% end %>
+            </div>
+
+            <div class="min-w-0">
+              <p class="text-sm font-medium text-gray-900 truncate"><%= user.username %></p>
+              <p class="text-xs text-gray-500 truncate">
+                <%= user.online? ? "Online" : "Last seen #{time_ago_in_words(user.last_seen_at)} ago" %>
+              </p>
+            </div>
+          </div>
+
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 rounded-md">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            Message
+          </span>
+        <% end %>
       <% end %>
+    <% else %>
+      <div class="p-8 text-center text-gray-500">
+        <% if params[:q].present? %>
+          No users found matching "<%= params[:q] %>"
+        <% else %>
+          No users found
+        <% end %>
+      </div>
     <% end %>
   </div>
-  
-  <div class="card-footer">
+
+  <div class="mt-6">
     <%= paginate @users %>
   </div>
 </div>

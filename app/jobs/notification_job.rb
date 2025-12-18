@@ -20,7 +20,7 @@ class NotificationJob < ApplicationJob
       # For mobile: FCM/APNs via Hotwire Native bridge
       
       send_web_notification(membership.user, message)
-      send_mobile_notification(membership.user, message) if mobile_user?(membership.user)
+      #send_mobile_notification(membership.user, message) if mobile_user?(membership.user)
     end
 	end
 

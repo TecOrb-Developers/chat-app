@@ -3,14 +3,24 @@ class ConversationsController < ApplicationController
   before_action :set_conversation, only: [:show, :destroy]
 
   def index
-    @conversations = current_user.conversations
-      .includes(:users, :conversation_memberships, messages: :user)
-      .recent
-      .page(params[:page])
-      .per(20)
+  @conversations = current_user.conversations
+    .includes(:users, :conversation_memberships, messages: :user)
+    .order(updated_at: :desc)
+    .page(params[:page])
+    .per(20)
 
-    @online_users = User.online.where.not(id: current_user.id)
+  @online_users = User.online.where.not(id: current_user.id)
+  
+  # Set the conversation if an ID is provided
+  if params[:id].present?
+    @conversation = @conversations.find(params[:id])
+    @messages = @conversation.messages.includes(:user).order(created_at: :asc)
+  elsif @conversations.any?
+    # Default to first conversation if none selected
+    @conversation = @conversations.first
+    @messages = @conversation.messages.includes(:user).order(created_at: :asc) if @conversation
   end
+end
 
   def show
     @messages = @conversation.messages

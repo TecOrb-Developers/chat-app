@@ -1,0 +1,7 @@
+<% typing_users = conversation.typing_users(exclude_user: current_user) %>
+<% if typing_users.any? %>
+  <span class="text-gray-500">
+    <%= typing_users.map(&:display_name).to_sentence %> 
+    <%= typing_users.size == 1 ? 'is' : 'are' %> typing...
+  </span>
+<% end %>

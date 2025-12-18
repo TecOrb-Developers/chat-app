@@ -1,29 +1,41 @@
-<!-- app/views/messages/_message.html.erb -->
-<div id="<%= dom_id(message) %>" class="message-container <%= message.user == current_user ? 'sent' : 'received' %>">
-  <div class="message-content bg-<%= message.user == current_user ? 'primary text-white' : 'light border' %>">
-    <% if message.user != current_user %>
-      <div class="fw-bold"><%= message.user.username %></div>
-    <% end %>
-    
-    <%= simple_format(message.content) %>
-    
-    <% if message.attachments.attached? %>
-      <div class="mt-2">
-        <% message.attachments.each do |attachment| %>
-          <% if attachment.image? %>
-            <%= image_tag attachment, class: "img-fluid rounded" %>
-          <% else %>
-            <%= link_to attachment.filename, url_for(attachment), class: "d-block" %>
+<% mine = (defined?(current_user) && current_user && message.user_id == current_user.id) %>
+
+<div id="<%= dom_id(message) %>" class="flex items-end gap-2 <%= mine ? 'justify-end' : 'justify-start' %>">
+  <% unless mine %>
+    <img src="<%= message.user&.avatar || "https://ui-avatars.com/api/?name=#{ERB::Util.url_encode(message.user&.display_name.to_s)}&background=random&bold=true" %>"
+         alt="" class="w-7 h-7 rounded-full object-cover bg-gray-100">
+  <% end %>
+
+  <div class="max-w-[78%]">
+    <div class="rounded-2xl px-3.5 py-2.5 text-sm
+                <%= mine ? 'bg-blue-600 text-white rounded-br-md' : 'bg-white text-gray-900 border border-gray-200 rounded-bl-md' %>">
+      <% if message.content.present? %>
+        <%= simple_format(message.content, {}, wrapper_tag: "div") %>
+      <% end %>
+
+      <% if message.attachments.any? %>
+        <div class="mt-2 grid grid-cols-2 gap-2">
+          <% message.attachments.each do |att| %>
+            <%= link_to url_for(att.file), target: "_blank", class: "block overflow-hidden rounded-lg border border-gray-200" do %>
+              <% if att.file.image? %>
+                <%= image_tag att.file.variant(resize_to_limit: [800, 800]), class: "w-full h-32 object-cover" %>
+              <% else %>
+                <div class="p-2 bg-gray-50 text-gray-700 text-xs truncate"><%= att.file.filename.to_s %></div>
+              <% end %>
+            <% end %>
           <% end %>
-        <% end %>
-      </div>
-    <% end %>
-    
-    <div class="message-time">
-      <%= time_ago_in_words(message.created_at) %> ago
-      <% if message.edited? %>
-        · edited
+        </div>
       <% end %>
     </div>
+    <div class="mt-1 flex items-center <%= mine ? 'justify-end' : 'justify-start' %>">
+      <span class="text-[11px] text-gray-400">
+        <%= time_ago_in_words(message.created_at) %> ago
+      </span>
+    </div>
   </div>
+
+  <% if mine %>
+    <img src="<%= current_user&.avatar || "https://ui-avatars.com/api/?name=#{ERB::Util.url_encode(current_user&.display_name.to_s)}&background=random&bold=true" %>"
+         alt="" class="w-7 h-7 rounded-full object-cover bg-gray-100">
+  <% end %>
 </div>

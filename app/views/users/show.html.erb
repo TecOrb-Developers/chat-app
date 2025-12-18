@@ -1,0 +1,97 @@
+<div class="max-w-4xl mx-auto p-6">
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <!-- Header with cover photo -->
+    <div class="h-32 bg-gradient-to-r from-blue-500 to-blue-600"></div>
+    
+    <!-- Profile section -->
+    <div class="px-6 pb-6">
+      <div class="flex flex-col sm:flex-row sm:items-end -mt-16 mb-6">
+        <!-- Avatar -->
+        <div class="relative">
+          <% avatar = @user.try(:avatar_url).presence || "https://ui-avatars.com/api/?name=#{ERB::Util.url_encode(@user.username.to_s)}&background=random&bold=true" %>
+          <img src="<%= avatar %>" 
+               alt="<%= @user.username %>" 
+               class="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover">
+          <% if @user.online? %>
+            <span class="absolute bottom-2 right-2 w-4 h-4 bg-green-500 rounded-full ring-2 ring-white"></span>
+          <% end %>
+        </div>
+        
+        <!-- User info -->
+        <div class="mt-4 sm:mt-0 sm:ml-6
+                  flex-1 flex flex-col sm:flex-row sm:items-end justify-between">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900"><%= @user.username %></h1>
+            <p class="text-gray-600 flex items-center">
+              <% if @user.online? %>
+                <span class="flex items-center">
+                  <span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                  Online now
+                </span>
+              <% else %>
+                <span class="text-sm">
+                  Last seen <%= time_ago_in_words(@user.last_seen_at) %> ago
+                </span>
+              <% end %>
+            </p>
+          </div>
+          
+          <!-- Action buttons -->
+          <div class="mt-4 sm:mt-0 flex space-x-3">
+            <% if @conversation.present? %>
+              <%= link_to conversation_path(@conversation), 
+                        class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
+                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                Message
+              <% end %>
+            <% else %>
+              <%= link_to conversations_path(user_id: @user.id), 
+                        method: :post, 
+                        class: "inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500" do %>
+                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Start Chat
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Additional user details -->
+      <div class="border-t border-gray-200 pt-6">
+        <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+          <div class="sm:col-span-1">
+            <dt class="text-sm font-medium text-gray-500">Member since</dt>
+            <dd class="mt-1 text-sm text-gray-900">
+              <%= @user.created_at.strftime("%B %d, %Y") %>
+            </dd>
+          </div>
+          <div class="sm:col-span-1">
+            <dt class="text-sm font-medium text-gray-500">Status</dt>
+            <dd class="mt-1 text-sm text-gray-900">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <svg class="-ml-0.5 mr-1.5 h-2 w-2 text-green-400" fill="currentColor" viewBox="0 0 8 8">
+                  <circle cx="4" cy="4" r="3" />
+                </svg>
+                Active
+              </span>
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Back button -->
+  <div class="mt-6">
+    <%= link_to users_path, class: "inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500" do %>
+      <svg class="-ml-1 mr-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      Back to Users
+    <% end %>
+  </div>
+</div>

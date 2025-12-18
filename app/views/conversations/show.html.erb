@@ -1,66 +1,6 @@
 <!-- app/views/conversations/show.html.erb -->
-<div class="card h-100">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <h4 class="mb-0"><%= @conversation.title %></h4>
-    <div class="dropdown">
-      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="conversationMenu" data-bs-toggle="dropdown">
-        <i class="bi bi-three-dots-vertical"></i>
-      </button>
-      <ul class="dropdown-menu dropdown-menu-end">
-        <li>
-          <%= link_to "Leave conversation", "#", 
-              class: "dropdown-item text-danger",
-              data: { 
-                turbo_method: :delete,
-                turbo_confirm: "Are you sure you want to leave this conversation?" 
-              } %>
-        </li>
-      </ul>
-    </div>
-  </div>
-  
-  <div class="card-body p-0 d-flex flex-column">
-    <!-- Messages Container -->
-    <div id="messages" class="p-3 flex-grow-1" style="overflow-y: auto; max-height: 60vh;">
-      <%= render partial: "messages/message", collection: @messages.reverse, as: :message %>
-    </div>
-    
-    <!-- Message Form -->
-    <div class="border-top p-3 bg-light">
-      <%= render "messages/form", conversation: @conversation, message: @message %>
-    </div>
-  </div>
-</div>
-
-<%= content_for :head do %>
-  <style>
-    .message-container {
-      max-width: 80%;
-      margin-bottom: 1rem;
-    }
-    
-    .message-content {
-      padding: 0.75rem 1rem;
-      border-radius: 1rem;
-      position: relative;
-      word-wrap: break-word;
-    }
-    
-    .sent {
-      margin-left: auto;
-      text-align: right;
-    }
-    
-    .received {
-      margin-right: auto;
-    }
-    
-    .message-time {
-      font-size: 0.75rem;
-      color: #6c757d;
-      margin-top: 0.25rem;
-    }
-  </style>
+<%= turbo_frame_tag "conversation_#{@conversation.id}" do %>
+  <%= render "chat_area", conversation: @conversation %>
 <% end %>
 
-<%= turbo_stream_from @conversation %>
+<%= link_to "Back to conversations", conversations_path, class: "mt-4 inline-block text-blue-600 hover:text-blue-800" %>

@@ -57,7 +57,7 @@ class Conversation < ApplicationRecord
   end
 
 	def display_name(for_user: nil)
-    if direct? && for_user
+    if direct_message? && for_user
       other_user = users.where.not(id: for_user.id).first
       other_user&.display_name || 'Unknown User'
     else
@@ -66,7 +66,7 @@ class Conversation < ApplicationRecord
   end
 
   def display_avatar(for_user: nil)
-    if direct? && for_user
+    if direct_message? && for_user
       other_user = users.where.not(id: for_user.id).first
       other_user&.avatar
     else

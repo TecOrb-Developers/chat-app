@@ -1,18 +1,20 @@
 <!-- app/views/messages/_form.html.erb -->
+<%= turbo_frame_tag "new_message" do %>
 <%= form_with(model: [conversation, message], 
     data: { 
       controller: "message-form",
       action: "turbo:submit-end->message-form#resetForm"
     }) do |f| %>
   <div class="input-group">
-    <%= f.text_area :content, 
-          class: "form-control", 
-          placeholder: "Type your message...",
-          rows: 1,
-          data: { 
-            message_form_target: "input",
-            action: "keydown.enter->message-form#handleKeydown"
-          } %>
+    <%= f.text_area :content,
+                rows: 1,
+                placeholder: "Type a message...",
+                class: "w-full resize-none rounded-lg border border-gray-300 p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500",
+                data: { 
+                  controller: "typing-indicator autosize",
+                  action: "input->typing-indicator#userTyping input->autosize#resize keydown.enter->message-form#handleSubmit",
+                  typing_indicator_conversation_id_value: @conversation.id
+                } %>
     
     <div class="input-group-append">
       <label class="btn btn-outline-secondary" style="cursor: pointer;">
@@ -29,6 +31,7 @@
   </div>
   
   <div id="file-preview" class="mt-2" data-message-form-target="filePreview"></div>
+<% end %>
 <% end %>
 
 <%= javascript_tag nonce: true do %>
