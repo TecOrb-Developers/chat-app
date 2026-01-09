@@ -1,20 +1,25 @@
+// app/javascript/controllers/message_form_controller.js
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-	connect() {
-    console.log("Message form controller connected")
+  static targets = ["input"]
+
+  connect() {
+    console.log("Message form controller connected");
   }
 
-  handleSubmit(event) {
+  clearInput(event) {
+    console.log("Clearing input field");
+    console.log("this.inputTarget.value", this.inputTarget.value);
+    this.inputTarget.value = "";
+  }
+
+  sendMessage(event) {
     if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault() // Prevent the default form submission
-      this.element.requestSubmit() // Submit the form programmatically
+      event.preventDefault();
+      console.log("Submitting form");
+      this.element.requestSubmit();
     }
   }
-	
-  resetForm(event) {
-    if (event.detail.success) {
-      this.element.reset()
-    }
-  }
+
 }

@@ -1,0 +1,3 @@
+<%= turbo_stream.replace "chat-area" do %>
+  <%= render "chat_area", conversation: @conversation, messages: @messages %>
+<% end %>

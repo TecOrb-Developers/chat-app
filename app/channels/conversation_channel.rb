@@ -26,13 +26,6 @@ class ConversationChannel < ApplicationCable::Channel
     end
   end
 
-  # def receive(data)
-  #   # Handle typing indicators, read receipts, etc.
-  #   ConversationChannel.broadcast_to(
-  #     Conversation.find(params[:id]),
-  #     data
-  #   )
-  # end
 
   def speak(data)
     conversation = Conversation.find(params[:id])
@@ -45,6 +38,8 @@ class ConversationChannel < ApplicationCable::Channel
     ).call
 
     if message
+      # Broadcast the message to the conversation channel
+      broadcast_message(message)
       # Stop typing indicator
       stop_typing
     else
@@ -54,6 +49,21 @@ class ConversationChannel < ApplicationCable::Channel
         timestamp: Time.current.iso8601
       })
     end
+  end
+
+  def broadcast_message(message)
+    # This broadcasts to the conversation channel
+    self.class.broadcast_to(
+      message.conversation,
+      {
+        type: 'message',
+        message_id: message.id,
+        user_id: message.user_id,
+        conversation_id: message.conversation_id,
+        created_at: message.created_at,
+        content: message.content
+      }
+    )
   end
 
   def typing

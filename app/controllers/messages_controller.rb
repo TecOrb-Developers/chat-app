@@ -3,28 +3,22 @@ class MessagesController < ApplicationController
   before_action :set_message, only: [:update, :destroy]
 
   def create
-    message = MessageCreator.new(
+    @message = MessageCreator.new(
       conversation: @conversation,
       user: current_user,
       content: message_params[:content],
       attachments: process_attachments,
-      parent_message: find_parent_message
     ).call
 
-    respond_to do |format|
-      if message
-        format.turbo_stream
-        format.html { redirect_to @conversation }
-        format.json { render json: message, status: :created }
-      else
-        format.html { 
-          redirect_to @conversation, 
-          alert: 'Failed to send message.' 
-        }
-        format.json { 
-          render json: { error: 'Failed to send message' }, 
-          status: :unprocessable_entity 
-        }
+    if @message
+      respond_to do |format|
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("message-form", partial: "conversations/message_form", locals: { conversation: @conversation }) }
+        format.json { render json: { status: 'success', message: @message } }
+      end
+    else
+      respond_to do |format|
+        format.turbo_stream { render turbo_stream: turbo_stream.replace("message-form", partial: "conversations/message_form", locals: { conversation: @conversation, error: "Failed to send message" }) }
+        format.json { render json: { status: 'error', message: 'Failed to send message' } }
       end
     end
   end
@@ -68,7 +62,7 @@ class MessagesController < ApplicationController
   end
 
   def message_params
-    params.require(:message).permit(:content, :parent_message_id)
+    params.require(:message).permit(:content, attachments: [])
   end
 
   def find_parent_message

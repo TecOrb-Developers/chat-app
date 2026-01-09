@@ -2,5 +2,3 @@
 <%= turbo_frame_tag "conversation_#{@conversation.id}" do %>
   <%= render "chat_area", conversation: @conversation %>
 <% end %>
-
-<%= link_to "Back to conversations", conversations_path, class: "mt-4 inline-block text-blue-600 hover:text-blue-800" %>

@@ -1,8 +1,11 @@
 <!-- app/views/conversations/_chat_area.html.erb -->
 <!-- Mobile Chat View -->
-<div class="md:hidden min-h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-purple-800">
+<div class="md:hidden flex flex-col h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-purple-800" 
+     data-controller="conversation"
+     data-conversation-conversation-id-value="<%= @conversation&.id %>"
+     data-conversation-current-user-id-value="<%= current_user.id %>">
   <!-- Mobile Chat Header -->
-  <div class="bg-gradient-to-r from-purple-900 to-gray-900 text-white p-4 pt-12">
+  <div class="bg-gradient-to-r from-purple-900 to-gray-900 text-white p-4 pt-12 border-b border-gray-700">
     <div class="flex items-center space-x-3">
       <%= link_to conversations_path, class: "p-2 hover:bg-gray-700 rounded-full" do %>
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,60 +48,53 @@
   </div>
 
   <!-- Mobile Messages -->
-  <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-900" id="mobile-messages" style="height: calc(100vh - 180px);">
+  <div class="flex-1 overflow-y-auto p-4 space-y-2" id="mobile-messages" style="padding-bottom: 120px;" style="padding-bottom: 120px; -webkit-overflow-scrolling: touch;"
+       data-conversation-target="messagesContainer">>
     <% if @messages.present? %>
       <% @messages.each do |message| %>
-        <div class="flex <%= message.user == current_user ? 'justify-end' : 'justify-start' %>">
-          <div class="max-w-xs px-4 py-2 rounded-2xl <%= message.user == current_user ? 'bg-purple-600 text-white' : 'bg-gray-700 text-white' %>">
+        <div class="flex <%= message.user_id == current_user.id ? 'justify-end' : 'justify-start' %> mb-3" id="message-<%= message.id %>">
+          <div class="max-w-xs md:max-w-md <%= message.user_id == current_user.id ? 'bg-purple-600 rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl' : 'bg-gray-700 rounded-tr-2xl rounded-br-2xl rounded-bl-2xl' %> text-white p-3 rounded-lg shadow">
             <p class="text-sm"><%= message.content %></p>
-            <p class="text-xs mt-1 text-right <%= message.user == current_user ? 'text-purple-200' : 'text-gray-400' %>">
+            <p class="text-xs text-gray-300 text-right mt-1">
               <%= message.created_at.strftime("%I:%M %p") %>
             </p>
           </div>
         </div>
       <% end %>
-    <% else %>
-      <div class="flex items-center justify-center h-full text-gray-400">
-        <div class="text-center">
-          <div class="w-16 h-16 mx-auto mb-2 text-gray-600">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-          </div>
-          <p>No messages yet. Say hello!</p>
-        </div>
-      </div>
     <% end %>
   </div>
 
   <!-- Mobile Message Input -->
-  <div class="bg-gray-800 border-t border-gray-700 p-4">
-    <div class="flex items-center space-x-2">
-      <button class="p-2 text-gray-400 hover:text-gray-300">
+  <div class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4">
+    <%= form_with(model: [@conversation, Message.new], 
+                 html: { class: 'flex items-center space-x-2' },
+                 data: { 
+                   controller: 'message-form',
+                   action: 'ajax:success->message-form#clearInput turbo:submit-end->conversation#scrollToBottom'
+                 }) do |f| %>
+      <%= f.hidden_field :conversation_id, value: @conversation.id %>
+      <div class="flex-1 relative">
+        <%= f.text_field :content, 
+                        class: 'w-full bg-gray-700 text-white rounded-full py-3 px-4 pr-12 focus:outline-none focus:ring-2 focus:ring-purple-500',
+                        placeholder: 'Type a message...',
+                        data: { 
+                          action: 'keydown.enter->message-form#sendMessage',
+                          message_form_target: 'input'
+                        } %>
+      </div>
+      <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white rounded-full p-3 focus:outline-none">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
         </svg>
       </button>
-      <%= form_with(model: [@conversation, Message.new], 
-                  class: "flex-1 flex items-center space-x-2",
-                  data: { controller: "message-form", 
-                          action: "turbo:submit-end->message-form#resetForm" }) do |f| %>
-        <input type="text" 
-               name="message[content]"
-               placeholder="Type a message..." 
-               class="flex-1 rounded-full border-0 bg-gray-700 text-white placeholder-gray-400 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500">
-        <button type="submit" class="p-2 text-purple-500 hover:text-purple-400">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-          </svg>
-        </button>
-      <% end %>
-    </div>
+    <% end %>
   </div>
 </div>
 
 <!-- Desktop Chat View -->
-<div class="hidden md:flex md:flex-col md:h-screen md:bg-gray-50">
+<div class="hidden md:flex flex-col h-full bg-white" 
+     data-conversation-id="<%= @conversation&.id %>" 
+     data-current-user-id="<%= current_user.id %>">
   <!-- Desktop Chat header -->
   <div class="bg-white border-b border-gray-200 p-4">
     <div class="flex items-center space-x-3">
@@ -167,7 +163,7 @@
       <%= form_with(model: [@conversation, Message.new], 
                   class: "flex-1 flex items-center space-x-2",
                   data: { controller: "message-form", 
-                          action: "turbo:submit-end->message-form#resetForm" }) do |f| %>
+                          action: "turbo:submit-end->message-form#clearInput", turbo_frame: "chat-area" }) do |f| %>
         <input type="text" 
                name="message[content]"
                placeholder="Type a message..." 
