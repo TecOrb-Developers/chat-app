@@ -2,26 +2,58 @@ class MessagesController < ApplicationController
   before_action :set_conversation
   before_action :set_message, only: [:update, :destroy]
 
-  def create
-    @message = MessageCreator.new(
-      conversation: @conversation,
-      user: current_user,
-      content: message_params[:content],
-      attachments: process_attachments,
-    ).call
+ def create
+  @message = MessageCreator.new(
+    conversation: @conversation,
+    user: current_user,
+    content: message_params[:content],
+    attachments: process_attachments,
+  ).call
 
-    if @message
-      respond_to do |format|
-        format.turbo_stream { render turbo_stream: turbo_stream.replace("message-form", partial: "conversations/message_form", locals: { conversation: @conversation }) }
-        format.json { render json: { status: 'success', message: @message } }
+  if @message&.persisted?
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          # Append the new message to the messages list
+          turbo_stream.append("messages", 
+            partial: "messages/message", 
+            locals: { 
+              message: @message,
+              current_user: current_user
+            }
+          ),
+          # Reset the form
+          turbo_stream.replace("message-form",
+            partial: "conversations/message_form",
+            locals: {
+              conversation: @conversation,
+              message: Message.new
+            }
+          ),
+          # # Scroll to bottom (optional)
+          # turbo_stream.update("messages", 
+          #   partial: "shared/scroll_to_bottom"
+          # )
+        ]
       end
-    else
-      respond_to do |format|
-        format.turbo_stream { render turbo_stream: turbo_stream.replace("message-form", partial: "conversations/message_form", locals: { conversation: @conversation, error: "Failed to send message" }) }
-        format.json { render json: { status: 'error', message: 'Failed to send message' } }
+      format.json { render json: { status: 'success', message: @message } }
+    end
+  else
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace("message-form",
+          partial: "conversations/message_form",
+          locals: {
+            conversation: @conversation,
+            message: @message || Message.new,
+            error: @message&.errors&.full_messages&.to_sentence || "Failed to send message"
+          }
+        )
       end
+      format.json { render json: { status: 'error', message: 'Failed to send message' } }
     end
   end
+end
 
   def update
     if @message.user == current_user
@@ -62,7 +94,7 @@ class MessagesController < ApplicationController
   end
 
   def message_params
-    params.require(:message).permit(:content, attachments: [])
+    params.require(:message).permit(:content, :conversation_id, attachments: [])
   end
 
   def find_parent_message

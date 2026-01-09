@@ -1,18 +1,23 @@
-<!-- app/views/conversations/_chat_area.html.erb -->
-<!-- Mobile Chat View -->
-<div class="md:hidden flex flex-col h-screen bg-gradient-to-br from-purple-900 via-gray-900 to-purple-800" 
+<%= turbo_stream_from [@conversation, "messages"] %>
+
+<div class="flex flex-col h-screen bg-white dark:bg-gray-900"
      data-controller="conversation"
      data-conversation-conversation-id-value="<%= @conversation&.id %>"
      data-conversation-current-user-id-value="<%= current_user.id %>">
-  <!-- Mobile Chat Header -->
-  <div class="bg-gradient-to-r from-purple-900 to-gray-900 text-white p-4 pt-12 border-b border-gray-700">
+  
+  <!-- Chat Header (Responsive) -->
+  <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 md:pt-4">
     <div class="flex items-center space-x-3">
-      <%= link_to conversations_path, class: "p-2 hover:bg-gray-700 rounded-full" do %>
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-        </svg>
-      <% end %>
-      
+      <!-- Back button (mobile only) -->
+      <div class="md:hidden">
+        <%= link_to conversations_path, class: "p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        <% end %>
+      </div>
+
+      <!-- Avatar -->
       <div class="relative flex-shrink-0">
         <% if @conversation.conversation_type == 'group_chat' %>
           <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center">
@@ -21,159 +26,60 @@
         <% else %>
           <img src="<%= @conversation.other_user(current_user).avatar.attached? ? 
                       url_for(@conversation.other_user(current_user).avatar) : 
-                      'https://ui-avatars.com/api/?name=' + @conversation.other_user(current_user).username + '&background=random' %>" 
+                      "https://ui-avatars.com/api/?name=#{@conversation.other_user(current_user).username}&background=random" %>" 
                class="w-10 h-10 rounded-full object-cover">
-          <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900"></span>
+          <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></span>
         <% end %>
       </div>
-      
-      <div class="flex-1">
-        <h2 class="font-semibold text-white">
+
+      <!-- User/Group Info -->
+      <div class="flex-1 min-w-0">
+        <h2 class="font-semibold text-gray-900 dark:text-white truncate">
           <%= @conversation.conversation_type == 'group_chat' ? @conversation.title : @conversation.other_user(current_user).username %>
         </h2>
-        <p class="text-xs text-gray-300">
+        <p class="text-xs text-gray-500 dark:text-gray-400">
           <%= @conversation.conversation_type == 'group_chat' ? 
                 pluralize(@conversation.users.count, 'member') : 
                 'Online' 
           %>
         </p>
       </div>
-      
-      <button class="p-2 hover:bg-gray-700 rounded-full">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+      <!-- Menu Button -->
+      <button class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
         </svg>
       </button>
     </div>
   </div>
 
-  <!-- Mobile Messages -->
-  <div class="flex-1 overflow-y-auto p-4 space-y-2" id="mobile-messages" style="padding-bottom: 120px;" style="padding-bottom: 120px; -webkit-overflow-scrolling: touch;"
-       data-conversation-target="messagesContainer">>
+  <!-- Messages Container -->
+  <div class="flex-1 overflow-y-auto p-4 space-y-2 md:space-y-4 pb-24 md:pb-4"
+       id="messages"
+       data-conversation-target="messagesContainer"
+       style="-webkit-overflow-scrolling: touch;">
     <% if @messages.present? %>
-      <% @messages.each do |message| %>
-        <div class="flex <%= message.user_id == current_user.id ? 'justify-end' : 'justify-start' %> mb-3" id="message-<%= message.id %>">
-          <div class="max-w-xs md:max-w-md <%= message.user_id == current_user.id ? 'bg-purple-600 rounded-tl-2xl rounded-tr-2xl rounded-bl-2xl' : 'bg-gray-700 rounded-tr-2xl rounded-br-2xl rounded-bl-2xl' %> text-white p-3 rounded-lg shadow">
-            <p class="text-sm"><%= message.content %></p>
-            <p class="text-xs text-gray-300 text-right mt-1">
-              <%= message.created_at.strftime("%I:%M %p") %>
-            </p>
-          </div>
-        </div>
-      <% end %>
-    <% end %>
-  </div>
-
-  <!-- Mobile Message Input -->
-  <div class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4">
-    <%= form_with(model: [@conversation, Message.new], 
-                 html: { class: 'flex items-center space-x-2' },
-                 data: { 
-                   controller: 'message-form',
-                   action: 'ajax:success->message-form#clearInput turbo:submit-end->conversation#scrollToBottom'
-                 }) do |f| %>
-      <%= f.hidden_field :conversation_id, value: @conversation.id %>
-      <div class="flex-1 relative">
-        <%= f.text_field :content, 
-                        class: 'w-full bg-gray-700 text-white rounded-full py-3 px-4 pr-12 focus:outline-none focus:ring-2 focus:ring-purple-500',
-                        placeholder: 'Type a message...',
-                        data: { 
-                          action: 'keydown.enter->message-form#sendMessage',
-                          message_form_target: 'input'
-                        } %>
-      </div>
-      <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white rounded-full p-3 focus:outline-none">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-        </svg>
-      </button>
-    <% end %>
-  </div>
-</div>
-
-<!-- Desktop Chat View -->
-<div class="hidden md:flex flex-col h-full bg-white" 
-     data-conversation-id="<%= @conversation&.id %>" 
-     data-current-user-id="<%= current_user.id %>">
-  <!-- Desktop Chat header -->
-  <div class="bg-white border-b border-gray-200 p-4">
-    <div class="flex items-center space-x-3">
-      <div class="relative">
-        <% if @conversation.conversation_type == 'group_chat' %>
-          <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-            <span class="text-gray-600 font-medium"><%= @conversation.title[0..1].upcase %></span>
-          </div>
-        <% else %>
-          <img src="<%= @conversation.other_user(current_user).avatar.attached? ? 
-                      url_for(@conversation.other_user(current_user).avatar) : 
-                      'https://ui-avatars.com/api/?name=' + @conversation.other_user(current_user).username + '&background=random' %>" 
-               class="w-10 h-10 rounded-full object-cover">
-          <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
-        <% end %>
-      </div>
-      <div>
-        <h2 class="font-semibold text-gray-900">
-          <%= @conversation.conversation_type == 'group_chat' ? @conversation.title : @conversation.other_user(current_user).username %>
-        </h2>
-        <p class="text-xs text-gray-500">
-          <%= @conversation.conversation_type == 'group_chat' ? 
-                pluralize(@conversation.users.count, 'member') : 
-                'Online' 
-          %>
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Desktop Messages container -->
-  <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50" id="desktop-messages">
-    <% if @messages.present? %>
-      <% @messages.each do |message| %>
-        <div class="flex <%= message.user == current_user ? 'justify-end' : 'justify-start' %>">
-          <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg <%= message.user == current_user ? 'bg-blue-500 text-white' : 'bg-white border border-gray-200 text-gray-900' %>">
-            <p class="text-sm"><%= message.content %></p>
-            <p class="text-xs mt-1 text-right <%= message.user == current_user ? 'text-blue-100' : 'text-gray-500' %>">
-              <%= message.created_at.strftime("%I:%M %p") %>
-            </p>
-          </div>
-        </div>
-      <% end %>
+      <%= render partial: "messages/message", 
+                 collection: @messages, 
+                 as: :message, 
+                 locals: { current_user: current_user } %>
     <% else %>
-      <div class="flex items-center justify-center h-full text-gray-500">
-        <div class="text-center">
-          <div class="w-16 h-16 mx-auto mb-2 text-gray-300">
+      <div class="flex items-center justify-center h-full text-gray-400 dark:text-gray-500">
+        <div class="text-center p-6">
+          <div class="w-16 h-16 mx-auto mb-4 text-gray-200 dark:text-gray-600">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-full w-full" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           </div>
-          <p>No messages yet. Say hello!</p>
+          <p class="text-gray-500 dark:text-gray-400">No messages yet. Say hello!</p>
         </div>
       </div>
     <% end %>
   </div>
 
-  <!-- Desktop Message input -->
-  <div class="bg-white border-t border-gray-200 p-4">
-    <div class="flex items-center space-x-2">
-      <button class="p-2 text-gray-500 hover:text-gray-700">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </button>
-      <%= form_with(model: [@conversation, Message.new], 
-                  class: "flex-1 flex items-center space-x-2",
-                  data: { controller: "message-form", 
-                          action: "turbo:submit-end->message-form#clearInput", turbo_frame: "chat-area" }) do |f| %>
-        <input type="text" 
-               name="message[content]"
-               placeholder="Type a message..." 
-               class="flex-1 rounded-full border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-        <button type="submit" class="p-2 text-blue-500 hover:text-blue-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-          </svg>
-        </button>
-      <% end %>
-    </div>
+  <!-- Message Input (Fixed on mobile, normal flow on desktop) -->
+  <div class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 fixed bottom-0 left-0 right-0 md:static">
+    <%= render "conversations/message_form", conversation: @conversation %>
   </div>
 </div>

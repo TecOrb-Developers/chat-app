@@ -1,20 +1,28 @@
 <!-- app/views/conversations/_message_form.html.erb -->
-<%= form_with(model: [conversation, Message.new], 
-              local: false,
-              id: "message-form",
-              class: "flex-1 flex items-center space-x-2",
+<div id="message-form">
+  <%= form_with(model: [conversation, Message.new], 
+              class: "w-full",
               data: { 
-                controller: "message-form", 
-                action: "turbo:submit-end->message-form#clearInput"
+                controller: "message-form",
+                action: "turbo:submit-end->message-form#clearInput",
+                conversation_target: "form"
               }) do |f| %>
-  <input type="text" 
-         name="message[content]"
-         placeholder="Type a message..." 
-         class="flex-1 rounded-full border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-         data-message-form-target="input">
-  <button type="submit" class="p-2 text-blue-500 hover:text-blue-600">
-    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-    </svg>
-  </button>
-<% end %>
+    <div class="relative flex items-center">
+      <%= f.hidden_field :conversation_id, value: conversation.id%>
+      
+      <%= f.text_field :content,
+                    class: "w-full bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-full py-3 px-4 pr-12 focus:outline-none focus:ring-2 focus:ring-purple-500",
+                    placeholder: "Type a message...",
+                    data: { 
+                      message_form_target: "input",
+                      action: "keydown.enter->message-form#sendMessage"
+                    } %>
+
+      <button type="submit" class="absolute right-3 text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+        </svg>
+      </button>
+    </div>
+  <% end %>
+</div>

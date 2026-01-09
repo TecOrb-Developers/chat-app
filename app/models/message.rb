@@ -85,18 +85,23 @@ class Message < ApplicationRecord
         [recipient, "conversations"],
         target: "conversation_#{conversation.id}",
         partial: "conversations/conversation_item",
-        locals: { conversation: conversation, user: recipient }
+        locals: { conversation: conversation, current_user: recipient }
       )
     end
   end
 
   def broadcast_message_update
-    broadcast_replace_to(
-      conversation,
-      target: "message_#{id}",
-      partial: "messages/message",
-      locals: { message: self }
-    )
+    conversation.users.find_each do |user|
+      broadcast_replace_to(
+        [user, conversation],  # Scope to user and conversation
+        target: "message_#{id}",
+        partial: "messages/message",
+        locals: { 
+          message: self,
+          current_user: user  # Pass the current user to the partial
+        }
+      )
+    end
   end
 
   def broadcast_message_removal

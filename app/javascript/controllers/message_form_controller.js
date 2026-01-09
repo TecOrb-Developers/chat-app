@@ -10,14 +10,15 @@ export default class extends Controller {
 
   clearInput(event) {
     console.log("Clearing input field");
-    console.log("this.inputTarget.value", this.inputTarget.value);
-    this.inputTarget.value = "";
+    if (this.hasInputTarget) {
+      this.inputTarget.value = ""
+      this.inputTarget.focus()
+    }
   }
 
   sendMessage(event) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      console.log("Submitting form");
       this.element.requestSubmit();
     }
   }

@@ -8,15 +8,15 @@ class MessageCreator
   end
 
   def call
-    ApplicationRecord.transaction do
+    # ApplicationRecord.transaction do
       message = create_message
       process_attachments(message) if @attachments.any?
       notify_users(message)
       message
-    end
-  rescue StandardError => e
-    Rails.logger.error "Failed to create message: #{e.message}"
-    nil
+    # end
+  # rescue StandardError => e
+  #   Rails.logger.error "Failed to create message: #{e.message}"
+  #   nil
   end
 
   private
